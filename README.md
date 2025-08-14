@@ -1,4 +1,3 @@
-/lichtara-os
 │
 ├─ README.md  
 │   ├─ Apresentação do projeto Lichtara  
