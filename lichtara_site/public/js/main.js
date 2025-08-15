@@ -83,6 +83,20 @@ const MAX_PARTICLES = 240;
 
 const ceu = document.getElementById('ceubasico');
 if (ceu) {
+  // optional background video activation
+  (async () => {
+    try {
+      const v = document.getElementById('auroraVideo');
+      if (!v) return;
+      // test sources quickly; if MP4 available, show when can play
+      const probe = await fetch('media/aurora.mp4', { method: 'HEAD' });
+      if (probe.ok) {
+        v.addEventListener('canplaythrough', () => v.classList.add('loaded'), { once: true });
+        // try play (some browsers require gesture; we keep muted+autoplay)
+        v.play().catch(()=>{});
+      }
+    } catch {}
+  })();
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   ceu.appendChild(canvas);
