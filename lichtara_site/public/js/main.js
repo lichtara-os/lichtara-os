@@ -186,6 +186,80 @@ if (ceu) {
   }
   ['pointerdown','keydown','click','touchstart'].forEach(ev => window.addEventListener(ev, resumeIfNeeded, { once: true }));
 
+  // Audio settings UI wiring
+  const settingsBtn = document.getElementById('audio-settings-btn');
+  const settingsPanel = document.getElementById('audio-settings');
+  const volSlider = document.getElementById('audio-volume');
+  const toneSlider = document.getElementById('audio-tone');
+  const syncCheckbox = document.getElementById('audio-sync');
+
+  // initial values
+  const volKey = 'lichtara.sound.volume';
+  const toneKey = 'lichtara.sound.tone';
+  const syncKey = 'lichtara.sound.sync';
+  const savedVol = localStorage.getItem(volKey); if (savedVol) volSlider.value = savedVol;
+  const savedTone = localStorage.getItem(toneKey); if (savedTone) toneSlider.value = savedTone;
+  const savedSync = localStorage.getItem(syncKey); if (savedSync) syncCheckbox.checked = savedSync === 'true';
+
+  function toggleSettings() {
+    const hide = settingsPanel.getAttribute('aria-hidden') === 'false';
+    settingsPanel.setAttribute('aria-hidden', hide ? 'true' : 'false');
+  }
+  if (settingsBtn) settingsBtn.addEventListener('click', toggleSettings);
+
+  // modify initAudio to respect tone and master volume and to expose oscillators for sync
+  let oscA = null, oscB = null, oscAGain = null, oscBGain = null;
+  const getVolume = () => parseFloat(volSlider.value || 0.7);
+  const getTone = () => parseFloat(toneSlider.value || 220);
+
+  // update master gain on slider change
+  volSlider.addEventListener('input', () => {
+    localStorage.setItem(volKey, volSlider.value);
+    if (masterGain) masterGain.gain.value = getVolume();
+  });
+
+  toneSlider.addEventListener('input', () => {
+    localStorage.setItem(toneKey, toneSlider.value);
+    if (oscA) oscA.frequency.setValueAtTime(getTone(), audioCtx.currentTime);
+  });
+
+  syncCheckbox.addEventListener('change', () => { localStorage.setItem(syncKey, syncCheckbox.checked); });
+
+  // extend initAudio to keep references
+  const _initAudio = initAudio;
+  initAudio = async function() {
+    if (audioCtx) return;
+    await _initAudio();
+    if (!audioCtx) return;
+    // ensure master gain matches slider
+    if (masterGain) masterGain.gain.value = getVolume();
+    // if we are using webaudio fallback, capture nodes
+    if (musicSource && musicSource.type === 'webaudio') {
+      // nodes: [o1,o2,o1g,o2g]
+      const nodes = musicSource.nodes;
+      oscA = nodes[0]; oscB = nodes[1]; oscAGain = nodes[2]; oscBGain = nodes[3];
+      // set tone
+      oscA.frequency.setValueAtTime(getTone(), audioCtx.currentTime);
+      oscB.frequency.setValueAtTime(getTone()*1.5, audioCtx.currentTime);
+      // ramp gains gently
+      if (oscAGain) oscAGain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+      if (oscBGain) oscBGain.gain.setValueAtTime(0.018, audioCtx.currentTime);
+    }
+  };
+
+  // sync aurora <-> audio: if checked, tweak oscillator frequencies slowly based on aurora layer phases
+  function syncAudioToAurora(time) {
+    if (!syncCheckbox || !syncCheckbox.checked) return;
+    if (!oscA || !oscB) return;
+    // sample aurora layers phases (use time) to modulate
+    const t = time * 0.0005;
+    const base = getTone();
+    const f1 = base + Math.sin(t * 0.9) * 18;
+    const f2 = base*1.45 + Math.cos(t * 0.7) * 28;
+    oscA.frequency.setValueAtTime(f1, audioCtx.currentTime);
+    oscB.frequency.setValueAtTime(f2, audioCtx.currentTime);
+  }
+
   // create explosion at ceu-local coords
   function createExplosion(x, y, color) {
     const count = 18 + Math.floor(random(0,16));
@@ -209,7 +283,9 @@ if (ceu) {
 
   // main render loop
   function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // audio sync
+  try { if (typeof syncAudioToAurora === 'function') syncAudioToAurora(performance.now()); } catch(e) {}
     if (!effectsEnabled) { requestAnimationFrame(draw); return; }
 
     // stars
