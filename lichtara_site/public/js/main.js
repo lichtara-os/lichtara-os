@@ -33,8 +33,11 @@ async function fetchList() {
   container.innerHTML = '';
   if (!items.length) {
     container.innerHTML = '<p>Nenhuma canalização ainda.</p>';
+    // still update stars map to empty
+    window.__canalizacoes = [];
     return;
   }
+  window.__canalizacoes = items.slice();
   items.forEach(it => {
     const div = document.createElement('div');
     div.className = 'item';
@@ -127,6 +130,8 @@ if (ceu) {
   const connections = [];
   let comet = { x: canvas.width/2, y: canvas.height/2, trail: [] };
   let parallax = { x: 0, y: 0 };
+  // clickable channel-stars (computed positions)
+  let channelStars = [];
 
   // initial stars
   const STAR_COUNT = 120;
@@ -144,7 +149,7 @@ if (ceu) {
   updateConnections();
 
   // resize-aware update
-  const ro = new ResizeObserver(() => { resizeCanvas(); updateConnections(); });
+  const ro = new ResizeObserver(() => { resizeCanvas(); updateConnections(); computeChannelStars(); });
   ro.observe(ceu);
 
   // toggle effects
@@ -347,6 +352,41 @@ if (ceu) {
     createExplosion(x,y,'hsl('+ (Math.floor(random(0,360))) +',70%,70%)');
   });
 
+  // map canalizações into deterministic positions across the canvas
+  function hashStr(s){
+    let h=0; for (let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return Math.abs(h);
+  }
+  function computeChannelStars(){
+    const list = window.__canalizacoes || [];
+    const W = canvas.width, H = canvas.height;
+    channelStars = list.map((it, idx) => {
+      const h = hashStr((it.title||'') + (it.author||'') + (it.created_at||idx));
+      const x = (h % (W-40)) + 20;
+      const y = ((Math.floor(h/997)) % (H-40)) + 20;
+      const r = 2 + (h % 3);
+      return { x, y, r, it };
+    });
+  }
+  // recompute when list fetched initially
+  computeChannelStars();
+
+  // star click detection opens modal
+  ceu.addEventListener('click', (ev) => {
+    const r = ceu.getBoundingClientRect();
+    const x = (ev.clientX - r.left) * DPR;
+    const y = (ev.clientY - r.top) * DPR;
+    // find nearest channel star within threshold
+    let best = null, bestD = 999999;
+    for (const cs of channelStars){
+      const dx = cs.x - x, dy = cs.y - y; const d = Math.sqrt(dx*dx+dy*dy);
+      if (d < 18*DPR && d < bestD){ best = cs; bestD = d; }
+    }
+    if (best){
+      openModal(best.it);
+      createExplosion(best.x, best.y, 'hsl('+ (Math.floor(random(0,360))) +',70%,70%)');
+    }
+  });
+
   // main render loop
   let lastT = performance.now();
   function draw(now) {
@@ -370,7 +410,7 @@ if (ceu) {
       ctx.beginPath(); ctx.arc(px, py, s.r * DPR, 0, Math.PI*2); ctx.fillStyle = `rgba(255,255,255,${s.alpha})`; ctx.fill();
     }
 
-    // connections
+    // connections (between .file UI anchors, optional)
     ctx.lineWidth = 1 * DPR;
     for (let i=0;i<connections.length;i++) {
       for (let j=i+1;j<connections.length;j++) {
@@ -381,6 +421,12 @@ if (ceu) {
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.strokeStyle = `rgba(173,216,230,${1-dist/(140*DPR)})`; ctx.stroke();
         }
       }
+    }
+
+    // draw channel stars (on top)
+    for (const cs of channelStars){
+      ctx.beginPath(); ctx.arc(cs.x, cs.y, Math.max(1.5, cs.r) * DPR, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,210,0.95)'; ctx.shadowBlur = 8 * DPR; ctx.shadowColor = 'rgba(255,240,200,0.8)'; ctx.fill(); ctx.shadowBlur = 0;
     }
 
     // particles
@@ -425,3 +471,23 @@ if (contentEl && previewEl && window.marked) {
   contentEl.addEventListener('input', render);
   render();
 }
+
+// Simple modal for channel star clicks
+const modal = document.getElementById('modal');
+const modalClose = document.getElementById('modal-close');
+const modalTitle = document.getElementById('modal-title');
+const modalMeta = document.getElementById('modal-meta');
+const modalContent = document.getElementById('modal-content');
+
+function openModal(item){
+  if (!modal) return;
+  modalTitle.textContent = item.title || 'Sem título';
+  modalMeta.textContent = `${item.author||'Anônimo'} • ${new Date(item.created_at).toLocaleString()}`;
+  modalContent.textContent = item.content || '';
+  modal.style.display = 'flex';
+}
+function closeModal(){ if (modal) modal.style.display = 'none'; }
+if (modal){
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+}
+if (modalClose){ modalClose.addEventListener('click', closeModal); }
