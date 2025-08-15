@@ -132,3 +132,218 @@ document.querySelectorAll('li.folder > span').forEach(span => {
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Portal Cósmico Vivo – Lichtara</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+  body {
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(#0b0c2a, #1a1f3b);
+    color: #fff;
+    margin: 2em;
+    overflow-x: hidden;
+  }
+  h1 {
+    text-align: center;
+    color: #ffd700;
+    margin-bottom: 1em;
+    text-shadow: 0 0 10px #ffd700;
+  }
+  ul { list-style: none; padding-left: 1em; }
+  li { margin: 0.3em 0; cursor: pointer; position: relative; transition: all 0.3s ease; }
+  li::before {
+    content: '🌑';
+    position: absolute;
+    left: -1.5em;
+    transition: transform 0.3s ease;
+  }
+  li.expanded::before { transform: rotate(90deg); content:'🌕'; }
+  li span { user-select: none; transition: all 0.2s ease; }
+  .hidden { display: none; opacity: 0; transition: opacity 0.5s ease; }
+  li ul.show { display: block; opacity: 1; }
+  .folder { font-weight: bold; color: #00f0ff; }
+  .file { font-style: italic; cursor: default; }
+  .file.diagram { color: #ff6f61; }
+  .file.html { color: #f4a261; }
+  .file.js { color: #2a9d8f; }
+  .file.css { color: #264653; }
+  .file.json { color: #6a5acd; }
+  .tooltip {
+    display: none; position: absolute; background: rgba(255,255,255,0.9);
+    color: #000; border-radius: 8px; padding: 0.4em 0.6em;
+    font-size: 0.9em; pointer-events: none; box-shadow: 0 0 10px #fff;
+  }
+  /* Estrelas de fundo */
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: twinkle 2s infinite alternate;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.2; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1.2); }
+  }
+</style>
+</head>
+<body>
+<h1>🌌 Portal Cósmico Vivo – Lichtara</h1>
+
+<ul id="tree">
+  <li class="folder"><span>Diagramas</span>
+    <ul class="hidden">
+      <li class="file diagram">repos-to-agents.mmd 🌟</li>
+      <li class="file diagram">repos-to-agents.md 🌟</li>
+      <li class="file diagram">repos-to-agents.png 🌟</li>
+      <li class="file diagram">repos-to-agents.svg 🌟</li>
+    </ul>
+  </li>
+  <li class="folder"><span>Mini-site</span>
+    <ul class="hidden">
+      <li class="file html">index.html 🌍</li>
+      <li class="file js">main.js 🚀</li>
+      <li class="file css">style.css 🎨</li>
+      <li class="file js">server.js ⚡</li>
+      <li class="file json">package.json 📦</li>
+      <li class="file json">package-lock.json 🔒</li>
+      <li class="file json">canalizacoes.json ✨</li>
+      <li class="file html">README.md 📜</li>
+    </ul>
+  </li>
+  <li class="folder"><span>Imagens</span>
+    <ul class="hidden">
+      <li class="file diagram">diagram1.png 🌠</li>
+      <li class="file diagram">diagram2.svg 🌠</li>
+      <li class="file diagram">canalizacao_icon.png 🌟</li>
+      <li class="file diagram">banner.jpg 🌌</li>
+      <li class="file diagram">logo_lightara.svg 🌟</li>
+      <li class="file diagram">background.png 🌌</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const tooltip = document.getElementById('tooltip');
+const treeSpans = document.querySelectorAll('li.folder > span');
+
+treeSpans.forEach(span => {
+  span.addEventListener('click', () => {
+    const li = span.parentElement;
+    const childUl = li.querySelector('ul');
+    if(childUl) {
+      childUl.classList.toggle('show');
+      li.classList.toggle('expanded');
+    }
+  });
+  span.addEventListener('mouseenter', e => {
+    tooltip.textContent = 'Pasta: ' + span.textContent;
+    tooltip.style.display = 'block';
+    tooltip.style.left = e.pageX + 15 + 'px';
+    tooltip.style.top = e.pageY + 15 + 'px';
+  });
+  span.addEventListener('mousemove', e => {
+    tooltip.style.left = e.pageX + 15 + 'px';
+    tooltip.style.top = e.pageY + 15 + 'px';
+  });
+  span.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+  });
+});
+
+// Criar estrelas aleatórias no fundo
+for(let i=0;i<50;i++){
+  const star = document.createElement('div');
+  star.className = 'star';
+  star.style.width = star.style.height = (Math.random()*3+1)+'px';
+  star.style.top = Math.random()*window.innerHeight+'px';
+  star.style.left = Math.random()*window.innerWidth+'px';
+  star.style.animationDuration = (Math.random()*3+2)+'s';
+  document.body.appendChild(star);
+}
+</script>
+</body>
+</html>
+<script>
+// --- Código de tooltip e expansão de pasta (mantido) ---
+const tooltip = document.getElementById('tooltip');
+const treeSpans = document.querySelectorAll('li.folder > span');
+
+treeSpans.forEach(span => {
+  span.addEventListener('click', () => {
+    const li = span.parentElement;
+    const childUl = li.querySelector('ul');
+    if(childUl) {
+      childUl.classList.toggle('show');
+      li.classList.toggle('expanded');
+      triggerStarBurst(li); // Explosão de estrelas ao abrir
+    }
+  });
+  span.addEventListener('mouseenter', e => {
+    tooltip.textContent = 'Pasta: ' + span.textContent;
+    tooltip.style.display = 'block';
+    tooltip.style.left = e.pageX + 15 + 'px';
+    tooltip.style.top = e.pageY + 15 + 'px';
+  });
+  span.addEventListener('mousemove', e => {
+    tooltip.style.left = e.pageX + 15 + 'px';
+    tooltip.style.top = e.pageY + 15 + 'px';
+  });
+  span.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+  });
+});
+
+// --- Estrelas de fundo já existentes ---
+for(let i=0;i<50;i++){
+  const star = document.createElement('div');
+  star.className = 'star';
+  star.style.width = star.style.height = (Math.random()*3+1)+'px';
+  star.style.top = Math.random()*window.innerHeight+'px';
+  star.style.left = Math.random()*window.innerWidth+'px';
+  star.style.animationDuration = (Math.random()*3+2)+'s';
+  document.body.appendChild(star);
+}
+
+// --- Função de explosão de estrelas ao abrir pasta ---
+function triggerStarBurst(parentLi) {
+  for(let i=0; i<10; i++){
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.width = star.style.height = (Math.random()*4+2)+'px';
+    star.style.top = parentLi.offsetTop + 'px';
+    star.style.left = (parentLi.offsetLeft + 15) + 'px';
+    star.style.background = ['#fff','#ffd700','#00f0ff','#ff6f61'][Math.floor(Math.random()*4)];
+    document.body.appendChild(star);
+    let dx = (Math.random()-0.5)*200;
+    let dy = (Math.random()-0.5)*200;
+    star.animate([
+      { transform: 'translate(0,0)', opacity:1 },
+      { transform: `translate(${dx}px, ${dy}px)`, opacity:0 }
+    ], { duration: 800, easing: 'ease-out' });
+    setTimeout(()=>star.remove(), 800);
+  }
+}
+
+// --- Cometas seguindo o cursor ---
+document.addEventListener('mousemove', e => {
+  const comet = document.createElement('div');
+  comet.className = 'star';
+  comet.style.width = comet.style.height = '3px';
+  comet.style.top = e.pageY + 'px';
+  comet.style.left = e.pageX + 'px';
+  comet.style.background = '#fffa';
+  comet.style.boxShadow = '0 0 10px #fff';
+  document.body.appendChild(comet);
+  comet.animate([
+    { transform: 'translate(0,0)', opacity:1 },
+    { transform: `translate(${(Math.random()-0.5)*50}px, ${(Math.random()-0.5)*50}px)`, opacity:0 }
+  ], { duration: 600, easing:'linear' });
+  setTimeout(()=>comet.remove(), 600);
+});
+</script>
