@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Mapa Cósmico Sistema Lichtara</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #fafafa; color: #333; }
+  ul { list-style: none; padding-left: 1em; }
+  li { margin: 0.3em 0; cursor: pointer; position: relative; }
+  li::before {
+    content: '▶';
+    position: absolute;
+    left: -1.2em;
+    transition: transform 0.2s;
+  }
+  li.expanded::before { transform: rotate(90deg); }
+  li span { user-select: none; }
+  .hidden { display: none; }
+  .file { color: #6a5acd; font-style: italic; cursor: default; }
+  .folder { font-weight: bold; }
+  .tooltip {
+    display: none; position: absolute; background: #fff; border: 1px solid #ccc; padding: 0.3em 0.5em;
+    border-radius: 4px; box-shadow: 1px 1px 5px rgba(0,0,0,0.2); font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+<h1>🌌 Mapa Cósmico – Sistema Lichtara</h1>
+<ul id="tree">
+  <li class="folder"><span>Diagramas</span>
+    <ul class="hidden">
+      <li class="file" title="Fonte Mermaid">repos-to-agents.mmd</li>
+      <li class="file">repos-to-agents.md</li>
+      <li class="file">repos-to-agents.png</li>
+      <li class="file">repos-to-agents.svg</li>
+    </ul>
+  </li>
+  <li class="folder"><span>Mini-site</span>
+    <ul class="hidden">
+      <li class="file">index.html</li>
+      <li class="file">main.js</li>
+      <li class="file">style.css</li>
+      <li class="file">server.js</li>
+      <li class="file">package.json</li>
+      <li class="file">package-lock.json</li>
+      <li class="file">canalizacoes.json</li>
+      <li class="file">README.md</li>
+    </ul>
+  </li>
+  <li class="folder"><span>Imagens</span>
+    <ul class="hidden">
+      <li class="file">diagram1.png</li>
+      <li class="file">diagram2.svg</li>
+      <li class="file">canalizacao_icon.png</li>
+      <li class="file">banner.jpg</li>
+      <li class="file">logo_lightara.svg</li>
+      <li class="file">background.png</li>
+    </ul>
+  </li>
+  <li class="folder"><span>Submódulos</span>
+    <ul class="hidden">
+      <li class="folder"><span>comunicacao-interdimensional</span>
+        <ul class="hidden">
+          <li class="file">fontes/</li>
+        </ul>
+      </li>
+      <li class="folder"><span>etica</span>
+        <ul class="hidden">
+          <li class="file">docs/</li>
+          <li class="file">leitura.md</li>
+          <li class="file">referencias/</li>
+        </ul>
+      </li>
+      <li class="folder"><span>lichtara</span>
+        <ul class="hidden">
+          <li class="file">configs/</li>
+          <li class="file">scripts/</li>
+          <li class="file">assets/</li>
+          <li class="file">README.md</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<script>
+  document.querySelectorAll('li.folder > span').forEach(span => {
+    span.addEventListener('click', () => {
+      const li = span.parentElement;
+      const childUl = li.querySelector('ul');
+      if(childUl) {
+        childUl.classList.toggle('hidden');
+        li.classList.toggle('expanded');
+      }
+    });
+    // Tooltip
+    span.addEventListener('mouseenter', e => {
+      const fileName = span.textContent;
+      const tip = document.createElement('div');
+      tip.className = 'tooltip';
+      tip.textContent = 'Pasta/arquivo: ' + fileName;
+      document.body.appendChild(tip);
+      tip.style.left = e.pageX + 'px';
+      tip.style.top = e.pageY + 'px';
+      span.addEventListener('mouseleave', () => tip.remove());
+    });
+  });
+</script>
+</body>
+</html>
