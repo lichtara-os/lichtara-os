@@ -1,39 +1,77 @@
 console.log('Portal Lichtara iniciado. Abra o canal da canalização!');
 
+const LS_KEY = 'lichtara.canalizacoes';
+
+async function apiFetch(url, options) {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res;
+  } catch (e) {
+    return null; // offline/no API
+  }
+}
+
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+}
+function saveLocal(items) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(items)); } catch {}
+}
+
 async function fetchList() {
-	const res = await fetch('/api/canalizacoes');
-	const items = await res.json();
-	const container = document.getElementById('lista');
-	container.innerHTML = '';
-	if (!items.length) {
-		container.innerHTML = '<p>Nenhuma canalização ainda.</p>';
-		return;
-	}
-	items.forEach(it => {
-		const div = document.createElement('div');
-		div.className = 'item';
-		div.innerHTML = `<h3>${escapeHtml(it.title)}</h3><div class="meta">${it.author} • ${new Date(it.created_at).toLocaleString()}</div><p>${escapeHtml(it.content)}</p>`;
-		container.appendChild(div);
-	});
+  let items = [];
+  const res = await apiFetch('/api/canalizacoes');
+  if (res) {
+    items = await res.json();
+    document.getElementById('offline-banner').style.display = 'none';
+  } else {
+    items = loadLocal();
+    document.getElementById('offline-banner').style.display = 'block';
+  }
+  const container = document.getElementById('lista');
+  container.innerHTML = '';
+  if (!items.length) {
+    container.innerHTML = '<p>Nenhuma canalização ainda.</p>';
+    return;
+  }
+  items.forEach(it => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<h3>${escapeHtml(it.title)}</h3><div class="meta">${escapeHtml(it.author||'Anônimo')} • ${new Date(it.created_at).toLocaleString()}</div><p>${escapeHtml(it.content)}</p>`;
+    container.appendChild(div);
+  });
 }
 
 function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;') }
 
 document.getElementById('form-canalizacao').addEventListener('submit', async (e) => {
-	e.preventDefault();
-	const title = document.getElementById('title').value.trim();
-	const author = document.getElementById('author').value.trim();
-	const content = document.getElementById('content').value.trim();
-	if (!title || !content) return alert('Título e conteúdo são obrigatórios');
-	const res = await fetch('/api/canalizacoes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, author, content }) });
-	if (res.ok) {
-		document.getElementById('form-canalizacao').reset();
-		await fetchList();
-	} else {
-		const err = await res.json();
-		alert('Erro: ' + (err.error || 'desconhecido'));
-	}
+  e.preventDefault();
+  const title = document.getElementById('title').value.trim();
+  const author = document.getElementById('author').value.trim();
+  const content = document.getElementById('content').value.trim();
+  if (!title || !content) return alert('Título e conteúdo são obrigatórios');
+
+  // try API first
+  const payload = { title, author, content };
+  const res = await apiFetch('/api/canalizacoes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if (res) {
+    document.getElementById('form-canalizacao').reset();
+    await fetchList();
+    return;
+  }
+
+  // offline fallback: save to localStorage
+  const items = loadLocal();
+  const now = new Date().toISOString();
+  items.unshift({ id: Date.now(), title, author: author || 'Anônimo', content, created_at: now });
+  saveLocal(items);
+  document.getElementById('form-canalizacao').reset();
+  await fetchList();
 });
+
+// initial load
+fetchList();
 
 // Portal Cósmico Interativo - Script Adicional
 // Integrated visual system attached to #ceubasico
