@@ -1,0 +1,51 @@
+flowchart LR
+  subgraph Org[Lichtara — `lichtara-os`]
+    direction TB
+    Lich["lichtara (repositório-mãe)"]
+    Agents["Agents / experimentos"]
+  end
+
+  subgraph Repos[Repositórios]
+    CI[comunicacao-interdimensional]
+    DP[declaracao-de-proposito]
+    DD[dicionario-do-invisivel]
+    ET[etica]
+    KIT[kit-instrucao-IA]
+    LIC[license]
+    WEB[lichtara-io.github.io]
+    RES[lichtara-research]
+    MAN[manuscrito]
+    ORG[organizar-manuais-github]
+    TMP[templates-canalizacao-tecnica]
+  end
+
+  subgraph Experiments[Agents]
+    AF[Agent Flux]
+    AL[Agent Lumora]
+    AS[Agent Syntaris]
+    AK[Agent Kaoran]
+    AN[Agent Navros]
+  end
+
+  Lich --> Repos
+  Lich --> Experiments
+
+  CI --> AF
+  DP --> AF
+
+  KIT --> AL
+  TMP --> AL
+
+  DD --> AS
+  ET --> AS
+
+  WEB --> AK
+  MAN --> AK
+
+  RES --> AN
+  ORG --> AN
+
+  classDef repos stroke:#2b6cb0,fill:#ebf8ff;
+  classDef agents stroke:#38a169,fill:#f0fff4;
+  class Repos repos
+  class Experiments agents

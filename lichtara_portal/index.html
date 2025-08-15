@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Portal Cósmico Interativo - Sistema Lichtara</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Portal Cósmico Interativo</h1>
+
+  <form id="canalizacaoForm">
+    <input type="text" id="titulo" placeholder="Título" required>
+    <input type="text" id="autor" placeholder="Autor" required>
+    <textarea id="conteudo" placeholder="Conteúdo" required></textarea>
+    <button type="submit">Enviar Canalização</button>
+  </form>
+
+  <div id="ceubasico"></div>
+
+  <div id="modal" class="hidden">
+    <div id="modalContent">
+      <span id="closeModal">&times;</span>
+      <h2 id="modalTitulo"></h2>
+      <h3 id="modalAutor"></h3>
+      <p id="modalConteudo"></p>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
