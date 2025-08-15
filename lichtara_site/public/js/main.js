@@ -79,7 +79,7 @@ fetchList();
 // util
 function random(min, max) { return Math.random() * (max - min) + min; }
 
-const MAX_PARTICLES = 200;
+const MAX_PARTICLES = 240;
 
 const ceu = document.getElementById('ceubasico');
 if (ceu) {
@@ -95,6 +95,14 @@ if (ceu) {
     canvas.height = Math.max(1, Math.floor(rect.height * DPR));
     canvas.style.width = rect.width + 'px';
     canvas.style.height = rect.height + 'px';
+    // recalc star density based on area (cap ranges)
+    const areaK = (canvas.width * canvas.height) / (1200*800);
+    const desired = Math.max(60, Math.min(220, Math.floor(110 * areaK)));
+    if (stars.length < desired) {
+      for (let i=stars.length; i<desired; i++) stars.push({ x: random(0, canvas.width), y: random(0, canvas.height), r: random(0.4,1.6), alpha: random(0.2,1), delta: random()*0.02, vx: random(-0.05,0.05), vy: random(-0.02,0.02) });
+    } else if (stars.length > desired) {
+      stars.length = desired;
+    }
   }
   resizeCanvas();
   window.addEventListener('resize', () => { DPR = window.devicePixelRatio || 1; resizeCanvas(); });
@@ -104,10 +112,11 @@ if (ceu) {
   const particles = [];
   const connections = [];
   let comet = { x: canvas.width/2, y: canvas.height/2, trail: [] };
+  let parallax = { x: 0, y: 0 };
 
   // initial stars
-  const STAR_COUNT = 90;
-  for (let i=0;i<STAR_COUNT;i++) stars.push({ x: random(0, canvas.width), y: random(0, canvas.height), r: random(0.4,1.4), alpha: random(0.2,1), delta: random()*0.02 });
+  const STAR_COUNT = 120;
+  for (let i=0;i<STAR_COUNT;i++) stars.push({ x: random(0, canvas.width), y: random(0, canvas.height), r: random(0.4,1.6), alpha: random(0.2,1), delta: random()*0.02, vx: random(-0.05,0.05), vy: random(-0.02,0.02) });
 
   // map existing .file elements to connection points (in ceu coords)
   function updateConnections() {
@@ -134,9 +143,14 @@ if (ceu) {
   // comet follows cursor within ceu
   ceu.addEventListener('mousemove', e => {
     const r = ceu.getBoundingClientRect();
-    comet.x = (e.clientX - r.left) * DPR; comet.y = (e.clientY - r.top) * DPR;
+    const cx = (e.clientX - r.left);
+    const cy = (e.clientY - r.top);
+    comet.x = cx * DPR; comet.y = cy * DPR;
     comet.trail.push({ x: comet.x, y: comet.y, t: Date.now() });
     if (comet.trail.length > 30) comet.trail.shift();
+    // parallax - map [0..w] -> [-1..1]
+    parallax.x = (cx / Math.max(1,r.width)) * 2 - 1;
+    parallax.y = (cy / Math.max(1,r.height)) * 2 - 1;
   });
 
   // --- Audio: ambient track or WebAudio fallback ---
@@ -320,7 +334,9 @@ if (ceu) {
   });
 
   // main render loop
-  function draw() {
+  let lastT = performance.now();
+  function draw(now) {
+  const dt = Math.min(40, now - lastT); lastT = now;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // audio sync
   try { if (typeof syncAudioToAurora === 'function') syncAudioToAurora(performance.now()); } catch(e) {}
@@ -330,7 +346,14 @@ if (ceu) {
     for (let s of stars) {
       s.alpha += s.delta;
       if (s.alpha <= 0.1 || s.alpha >= 1) s.delta *= -1;
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * DPR, 0, Math.PI*2); ctx.fillStyle = `rgba(255,255,255,${s.alpha})`; ctx.fill();
+      // gentle drift
+      s.x += s.vx * dt; s.y += s.vy * dt;
+      if (s.x < 0) s.x += canvas.width; if (s.x > canvas.width) s.x -= canvas.width;
+      if (s.y < 0) s.y += canvas.height; if (s.y > canvas.height) s.y -= canvas.height;
+      // parallax offset
+      const px = s.x + parallax.x * (8 + s.r*4);
+      const py = s.y + parallax.y * (6 + s.r*3);
+      ctx.beginPath(); ctx.arc(px, py, s.r * DPR, 0, Math.PI*2); ctx.fillStyle = `rgba(255,255,255,${s.alpha})`; ctx.fill();
     }
 
     // connections
@@ -373,9 +396,18 @@ if (ceu) {
     requestAnimationFrame(draw);
   }
 
-  draw();
+  requestAnimationFrame(draw);
 
   // small periodic refresh of star positions to remain within new size
   setInterval(() => { for (let s of stars) { s.x = Math.min(canvas.width-2, Math.max(2, s.x + random(-8,8))); s.y = Math.min(canvas.height-2, Math.max(2, s.y + random(-8,8))); } }, 2000);
 
 } // end if ceu
+
+// Markdown live preview
+const contentEl = document.getElementById('content');
+const previewEl = document.getElementById('preview');
+if (contentEl && previewEl && window.marked) {
+  const render = () => { previewEl.innerHTML = marked.parse(contentEl.value || ''); };
+  contentEl.addEventListener('input', render);
+  render();
+}
