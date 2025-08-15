@@ -1,0 +1,12 @@
+[build]
+  publish = "public"
+  command = ""
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/canalizacoes"
+  to = "/.netlify/functions/canalizacoes"
+  status = 200
