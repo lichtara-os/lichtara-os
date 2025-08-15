@@ -264,6 +264,14 @@ if (ceu) {
     });
   }
 
+  // keyboard shortcuts: L toggles low-power, S toggles sound, Esc closes modal
+  window.addEventListener('keydown', (ev) => {
+    const k = ev.key.toLowerCase();
+    if (k === 'escape') { try { closeModal(); } catch {} }
+    if (k === 'l' && toggle) { ev.preventDefault(); toggle.click(); }
+    if (k === 's' && soundToggle) { ev.preventDefault(); soundToggle.click(); }
+  });
+
   // resume audio on first user gesture if enabled
   function resumeIfNeeded() {
     if (!soundEnabled) return;
@@ -382,6 +390,7 @@ if (ceu) {
       const r = 2 + (h % 3);
       return { x, y, r, it };
     });
+  maybeShowHint();
   }
   // recompute when list fetched initially and on list updates
   computeChannelStars();
@@ -478,6 +487,39 @@ if (ceu) {
 
   // small periodic refresh of star positions to remain within new size
   setInterval(() => { for (let s of stars) { s.x = Math.min(canvas.width-2, Math.max(2, s.x + random(-8,8))); s.y = Math.min(canvas.height-2, Math.max(2, s.y + random(-8,8))); } }, 2000);
+
+  // Dismissible hint overlay: encourage clicking stars
+  function maybeShowHint(){
+    try {
+      const dismissed = localStorage.getItem('lichtara.hint.dismissed') === 'true';
+      if (dismissed) return;
+      if (!channelStars || channelStars.length === 0) return;
+      let hint = document.getElementById('hint-stars');
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.id = 'hint-stars';
+        hint.style.position = 'absolute';
+        hint.style.right = '16px';
+        hint.style.bottom = '16px';
+        hint.style.maxWidth = '320px';
+        hint.style.background = 'rgba(0,0,0,0.55)';
+        hint.style.color = '#fff';
+        hint.style.backdropFilter = 'blur(4px)';
+        hint.style.border = '1px solid rgba(255,255,255,0.16)';
+        hint.style.borderRadius = '10px';
+        hint.style.padding = '10px 12px';
+        hint.style.zIndex = '3';
+        hint.style.fontSize = '14px';
+        hint.style.lineHeight = '1.3';
+        hint.innerHTML = 'Dica: clique nas estrelas para abrir as canalizações. <button id="hint-close" style="margin-left:8px;background:#fff;color:#000;border:none;border-radius:6px;padding:2px 6px;cursor:pointer">Entendi</button>';
+        ceu.appendChild(hint);
+        const closeBtn = hint.querySelector('#hint-close');
+        closeBtn.addEventListener('click', () => { localStorage.setItem('lichtara.hint.dismissed','true'); hint.remove(); });
+      }
+    } catch {}
+  }
+  // show once on entry if applicable
+  maybeShowHint();
 
 } // end if ceu
 
