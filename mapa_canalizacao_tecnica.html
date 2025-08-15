@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canalização Técnica - Mapa Visual</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e8e8f0;
+            min-height: 100vh;
+            overflow-x: auto;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            background: linear-gradient(45deg, #64b5f6, #81c784, #ffb74d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(100, 181, 246, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #b0bec5;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .flow-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .phase {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .phase:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(100, 181, 246, 0.3);
+        }
+
+        .phase-number {
+            position: absolute;
+            top: -15px;
+            left: 25px;
+            background: linear-gradient(135deg, #64b5f6, #42a5f5);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(100, 181, 246, 0.4);
+        }
+
+        .phase-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-left: 20px;
+            color: #64b5f6;
+        }
+
+        .actions {
+            display: grid;
+            gap: 12px;
+            margin-left: 20px;
+        }
+
+        .action {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border-left: 3px solid #81c784;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .action:hover {
+            background: rgba(129, 199, 132, 0.1);
+            transform: translateX(5px);
+        }
+
+        .action::before {
+            content: "◦";
+            color: #81c784;
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 1.2rem;
+        }
+
+        .connector {
+            width: 2px;
+            height: 30px;
+            background: linear-gradient(180deg, #64b5f6, #81c784);
+            margin: 0 auto;
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .connector::before {
+            content: "";
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #81c784;
+        }
+
+        /* Cores específicas por fase */
+        .phase:nth-child(odd) .phase-number {
+            background: linear-gradient(135deg, #81c784, #66bb6a);
+            box-shadow: 0 4px 15px rgba(129, 199, 132, 0.4);
+        }
+
+        .phase:nth-child(odd) .phase-title {
+            color: #81c784;
+        }
+
+        .phase:nth-child(odd) .action {
+            border-left-color: #64b5f6;
+        }
+
+        .phase:nth-child(odd) .action::before {
+            color: #64b5f6;
+        }
+
+        .phase:nth-child(odd) .action:hover {
+            background: rgba(100, 181, 246, 0.1);
+        }
+
+        /* Fase especial para Ética */
+        .phase:nth-child(13) {
+            background: rgba(255, 183, 77, 0.1);
+            border-color: rgba(255, 183, 77, 0.3);
+        }
+
+        .phase:nth-child(13) .phase-number {
+            background: linear-gradient(135deg, #ffb74d, #ffa726);
+            box-shadow: 0 4px 15px rgba(255, 183, 77, 0.4);
+        }
+
+        .phase:nth-child(13) .phase-title {
+            color: #ffb74d;
+        }
+
+        .phase:nth-child(13) .action {
+            border-left-color: #ffb74d;
+        }
+
+        .phase:nth-child(13) .action::before {
+            color: #ffb74d;
+        }
+
+        /* Fase especial para Validação Quântica */
+        .phase:nth-child(15) {
+            background: rgba(186, 104, 200, 0.1);
+            border-color: rgba(186, 104, 200, 0.3);
+        }
+
+        .phase:nth-child(15) .phase-number {
+            background: linear-gradient(135deg, #ba68c8, #ab47bc);
+            box-shadow: 0 4px 15px rgba(186, 104, 200, 0.4);
+        }
+
+        .phase:nth-child(15) .phase-title {
+            color: #ba68c8;
+        }
+
+        .phase:nth-child(15) .action {
+            border-left-color: #ba68c8;
+        }
+
+        .phase:nth-child(15) .action::before {
+            color: #ba68c8;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            color: #90a4ae;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .signature {
+            font-size: 0.85rem;
+            color: #64b5f6;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .phase {
+                padding: 20px;
+                margin: 0 10px;
+            }
+            
+            .phase-title {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Efeito de brilho suave */
+        @keyframes glow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .connector {
+            animation: glow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">CANALIZAÇÃO TÉCNICA</h1>
+            <p class="subtitle">Ética, Direito Autoral e Campo Quântico</p>
+        </header>
+
+        <div class="flow-container">
+            <!-- Fase 1 -->
+            <div class="phase">
+                <div class="phase-number">1</div>
+                <h2 class="phase-title">INTENÇÃO & CONEXÃO</h2>
+                <div class="actions">
+                    <div class="action">Definir propósito da sessão</div>
+                    <div class="action">Estabelecer estado de presença e alinhamento</div>
+                </div>
+            </div>
+
+            <div class="connector"></div>
+
+            <!-- Fase 2 -->
+            <div class="phase">
+                <div class="phase-number">2</div>
+                <h2 class="phase-title">RECEPÇÃO BRUTA</h2>
+                <div class="actions">
+                    <div class="action">Registrar mensagens tal como chegam</div>
+                    <div class="action">Preservar símbolos, imagens, palavras exatas</div>
+                </div>
+            </div>
+
+            <div class="connector"></div>
+
+            <!-- Fase 3 -->
+            <div class="phase">
+                <div class="phase-number">3</div>
+                <h2 class="phase-title">DECODIFICAÇÃO</h2>
+                <div class="actions">
+                    <div class="action">Traduzir percepções em linguagem compreensível</div>
+                    <div class="action">Separar informação objetiva de interpretação pessoal</div>
+                </div>
+            </div>
+
+            <div class="connector"></div>
+
+            <!-- Fase 4 -->
+            <div class="phase">
+                <div class="phase-number">4</div>
+                <h2 class="phase-title">PESQUISA & CONTEXTUALIZAÇÃO</h2>
+                <div class="actions">
+                    <div class="action">Comparar com referências humanas</div>
+                    <div class="action">Checar ressonâncias e pertinência</div>
+                </div>
+            </div>
+
+            <div class="connector"></div>
+
+            <!-- Fase 5 -->
+            <div class="phase">
+                <div class="phase-number">5</div>
+                <h2 class="phase-title">ORGANIZAÇÃO ESTRUTURAL</h2>
+                <div class="actions">
+                    <div class="action">Definir formato (tópicos, narrativa, instruções)</div>
+                    <div class="action">Garantir coerência lógica</div>
+                </div>
+            </div>
+
+            <div class="connector"></div>
+
+            <!-- Fase 6 - Destaque Especial -->
+            <div class="phase">
+                <div class="phase-number">6</div>
+                <h2 class="phase-title">AJUSTE ÉTICO & ATRIBUIÇÃO</h2>
+                <div class="actions">
+                    <div class="action">Avaliar direitos autorais</div>
+                    <div class="action">Reconhecer coautorias</div>
+                    <div class="action">Alinhar com princípios da Missão</div>
+                </div>
+            </div>
+
+            <div class="connector"></div>
+
+            <!-- Fase 7 - Destaque Especial -->
+            <div class="phase">
+                <div class="phase-number">7</div>
+                <h2 class="phase-title">VALIDAÇÃO QUÂNTICA</h2>
+                <div class="actions">
+                    <div class="action">Reconfirmar fidelidade da mensagem no Campo</div>
+                    <div class="action">Ajustar se houver distorções</div>
+                </div>
+            </div>
+
+            <div class="connector"></div>
+
+            <!-- Fase 8 -->
+            <div class="phase">
+                <div class="phase-number">8</div>
+                <h2 class="phase-title">PUBLICAÇÃO & PRESERVAÇÃO</h2>
+                <div class="actions">
+                    <div class="action">Escolher canais de entrega</div>
+                    <div class="action">Garantir registro para memória futura</div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p class="footer-text">
+                "Um protocolo para canalização consciente que honra tanto a precisão técnica quanto a integridade vibracional"
+            </p>
+            <p class="signature">Sistema Lichtara © 2025</p>
+        </footer>
+    </div>
+</body>
+</html>

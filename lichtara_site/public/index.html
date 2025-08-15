@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Lichtara</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Sistema Lichtara</h1>
+        <p>Email: <a href="mailto:lichtara@deboralutz.com">lichtara@deboralutz.com</a></p>
+        <p>Site: <a href="https://lichtara.com" target="_blank">https://lichtara.com</a></p>
+    </header>
+
+    <main>
+        <section id="canalizacao">
+            <h2>Canalizações</h2>
+            <p>Bem-vindo ao portal interdimensional. Aqui suas canalizações aparecerão.</p>
+
+            <form id="form-canalizacao">
+                <div>
+                    <label for="title">Título</label><br>
+                    <input id="title" name="title" required />
+                </div>
+                <div>
+                    <label for="author">Autor</label><br>
+                    <input id="author" name="author" />
+                </div>
+                <div>
+                    <label for="content">Conteúdo</label><br>
+                    <textarea id="content" name="content" rows="6" required></textarea>
+                </div>
+                <div>
+                    <button type="submit">Enviar canalização</button>
+                </div>
+            </form>
+
+            <hr />
+            <div id="lista"></div>
+        </section>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
