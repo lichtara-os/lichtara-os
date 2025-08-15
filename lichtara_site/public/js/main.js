@@ -2,9 +2,14 @@ console.log('Portal Lichtara iniciado. Abra o canal da canalização!');
 
 const LS_KEY = 'lichtara.canalizacoes';
 
+const API_BASE = (function(){
+  try { return localStorage.getItem('lichtara.api.base') || ''; } catch { return ''; }
+})();
+
 async function apiFetch(url, options) {
   try {
-    const res = await fetch(url, options);
+    const abs = (API_BASE && url.startsWith('/')) ? (API_BASE.replace(/\/$/, '') + url) : url;
+    const res = await fetch(abs, options);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res;
   } catch (e) {
