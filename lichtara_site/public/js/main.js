@@ -101,6 +101,91 @@ if (ceu) {
     if (comet.trail.length > 30) comet.trail.shift();
   });
 
+  // --- Audio: ambient track or WebAudio fallback ---
+  const soundToggle = document.getElementById('toggle-sound');
+  const soundKey = 'lichtara.sound.enabled';
+  let soundEnabled = localStorage.getItem(soundKey);
+  soundEnabled = soundEnabled === null ? false : soundEnabled === 'true';
+  if (soundToggle) { soundToggle.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false'); }
+
+  // audio context & nodes
+  let audioCtx = null;
+  let masterGain = null;
+  let musicSource = null; // either <audio> element or webaudio nodes
+
+  // try to load packaged file first
+  async function initAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.7;
+      masterGain.connect(audioCtx.destination);
+
+      // try to fetch local file
+      const audioUrl = '/public/media/ambient.mp3'.replace(/^\/public/, '');
+      // prefer <audio> element for simple playback if file exists
+      const resp = await fetch(audioUrl, { method: 'HEAD' });
+      if (resp.ok) {
+        const audio = document.createElement('audio');
+        audio.src = audioUrl;
+        audio.loop = true;
+        const src = audioCtx.createMediaElementSource(audio);
+        src.connect(masterGain);
+        musicSource = { type: 'element', el: audio };
+      } else {
+        // fallback: gentle WebAudio ambient (two oscillators + noise)
+        const o1 = audioCtx.createOscillator(); o1.type = 'sine'; o1.frequency.value = 220;
+        const o2 = audioCtx.createOscillator(); o2.type = 'sine'; o2.frequency.value = 330;
+        const o1g = audioCtx.createGain(); o1g.gain.value = 0.02;
+        const o2g = audioCtx.createGain(); o2g.gain.value = 0.018;
+        o1.connect(o1g); o2.connect(o2g); o1g.connect(masterGain); o2g.connect(masterGain);
+        o1.start(); o2.start();
+        musicSource = { type: 'webaudio', nodes: [o1,o2,o1g,o2g] };
+      }
+    } catch (err) {
+      console.warn('audio init failed', err);
+      audioCtx = null; masterGain = null; musicSource = null;
+    }
+  }
+
+  function playAudio() {
+    if (!audioCtx) return initAudio().then(() => playAudio()).catch(()=>{});
+    if (musicSource && musicSource.type === 'element') {
+      musicSource.el.play().catch(()=>{});
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  }
+
+  function stopAudio() {
+    if (!musicSource) return;
+    if (musicSource.type === 'element') {
+      musicSource.el.pause();
+    } else if (musicSource.type === 'webaudio') {
+      // gently fade out
+      if (masterGain) {
+        const now = audioCtx.currentTime;
+        masterGain.gain.cancelScheduledValues(now); masterGain.gain.setValueAtTime(masterGain.gain.value, now); masterGain.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+      }
+    }
+  }
+
+  if (soundToggle) {
+    soundToggle.addEventListener('click', async () => {
+      soundEnabled = !soundEnabled; localStorage.setItem(soundKey, soundEnabled); soundToggle.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
+      if (soundEnabled) { await initAudio(); playAudio(); } else { stopAudio(); }
+    });
+  }
+
+  // resume audio on first user gesture if enabled
+  function resumeIfNeeded() {
+    if (!soundEnabled) return;
+    if (!audioCtx) { initAudio().then(()=>playAudio()).catch(()=>{}); return; }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+    if (musicSource && musicSource.type === 'element') musicSource.el.play().catch(()=>{});
+  }
+  ['pointerdown','keydown','click','touchstart'].forEach(ev => window.addEventListener(ev, resumeIfNeeded, { once: true }));
+
   // create explosion at ceu-local coords
   function createExplosion(x, y, color) {
     const count = 18 + Math.floor(random(0,16));
