@@ -36,123 +36,147 @@ document.getElementById('form-canalizacao').addEventListener('submit', async (e)
 });
 
 // Portal Cósmico Interativo - Script Adicional
+// Integrated visual system attached to #ceubasico
 
-// Configurações
-const canvas = document.createElement('canvas');
-document.body.appendChild(canvas);
-canvas.style.position = 'fixed';
-canvas.style.top = 0;
-canvas.style.left = 0;
-canvas.style.width = '100%';
-canvas.style.height = '100%';
-canvas.style.zIndex = '0';
-canvas.style.pointerEvents = 'none';
-const ctx = canvas.getContext('2d');
-
-let stars = [];
-let planets = [];
-let connections = [];
-let width = canvas.width = window.innerWidth;
-let height = canvas.height = window.innerHeight;
-
-// Função utilitária
+// util
 function random(min, max) { return Math.random() * (max - min) + min; }
 
-// Criar estrelas de fundo
-for (let i = 0; i < 150; i++) {
-  stars.push({ x: random(0, width), y: random(0, height), r: random(0.5, 1.5), alpha: random(0.1, 1), delta: Math.random()*0.02 });
-}
+const MAX_PARTICLES = 200;
 
-// Criar planetas orbitando (cada pasta)
-document.querySelectorAll('.folder').forEach((folder, i) => {
-  planets.push({
-    folder,
-    angle: random(0, 2*Math.PI),
-    radius: random(20, 50),
-    speed: random(0.01, 0.03),
-    size: random(6, 12),
-    color: `hsl(${i*40 % 360}, 70%, 60%)`
+const ceu = document.getElementById('ceubasico');
+if (ceu) {
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('aria-hidden', 'true');
+  ceu.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  let DPR = window.devicePixelRatio || 1;
+  function resizeCanvas() {
+    const rect = ceu.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.floor(rect.width * DPR));
+    canvas.height = Math.max(1, Math.floor(rect.height * DPR));
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', () => { DPR = window.devicePixelRatio || 1; resizeCanvas(); });
+
+  // particles, stars, comet
+  const stars = [];
+  const particles = [];
+  const connections = [];
+  let comet = { x: canvas.width/2, y: canvas.height/2, trail: [] };
+
+  // initial stars
+  const STAR_COUNT = 90;
+  for (let i=0;i<STAR_COUNT;i++) stars.push({ x: random(0, canvas.width), y: random(0, canvas.height), r: random(0.4,1.4), alpha: random(0.2,1), delta: random()*0.02 });
+
+  // map existing .file elements to connection points (in ceu coords)
+  function updateConnections() {
+    connections.length = 0;
+    document.querySelectorAll('.file').forEach(el => {
+      const r = el.getBoundingClientRect();
+      const parentR = ceu.getBoundingClientRect();
+      connections.push({ x: (r.left - parentR.left + r.width/2) * DPR, y: (r.top - parentR.top + r.height/2) * DPR });
+    });
+  }
+  updateConnections();
+
+  // resize-aware update
+  const ro = new ResizeObserver(() => { resizeCanvas(); updateConnections(); });
+  ro.observe(ceu);
+
+  // toggle effects
+  const toggle = document.getElementById('toggle-effects');
+  const effectsKey = 'lichtara.effects.enabled';
+  let effectsEnabled = localStorage.getItem(effectsKey);
+  effectsEnabled = effectsEnabled === null ? true : effectsEnabled === 'true';
+  if (toggle) { toggle.setAttribute('aria-pressed', effectsEnabled ? 'true' : 'false'); toggle.addEventListener('click', () => { effectsEnabled = !effectsEnabled; localStorage.setItem(effectsKey, effectsEnabled); toggle.setAttribute('aria-pressed', effectsEnabled ? 'true' : 'false'); }); }
+
+  // comet follows cursor within ceu
+  ceu.addEventListener('mousemove', e => {
+    const r = ceu.getBoundingClientRect();
+    comet.x = (e.clientX - r.left) * DPR; comet.y = (e.clientY - r.top) * DPR;
+    comet.trail.push({ x: comet.x, y: comet.y, t: Date.now() });
+    if (comet.trail.length > 30) comet.trail.shift();
   });
-});
 
-// Conectar arquivos dentro de pastas
-document.querySelectorAll('.file').forEach(file => {
-  const rect = file.getBoundingClientRect();
-  connections.push({x: rect.left + rect.width/2, y: rect.top + rect.height/2});
-});
-
-// Atualizar canvas ao redimensionar
-window.addEventListener('resize', () => {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-});
-
-// Desenhar loop
-function animate() {
-  ctx.clearRect(0, 0, width, height);
-
-  // Estrelas
-  stars.forEach(s => {
-    s.alpha += s.delta;
-    if (s.alpha <= 0.1 || s.alpha >= 1) s.delta *= -1;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
-    ctx.fill();
-  });
-
-  // Planetas orbitando pastas
-  planets.forEach(p => {
-    const rect = p.folder.getBoundingClientRect();
-    const cx = rect.left + rect.width/2;
-    const cy = rect.top + rect.height/2;
-    p.angle += p.speed;
-    const px = cx + Math.cos(p.angle)*p.radius;
-    const py = cy + Math.sin(p.angle)*p.radius;
-    ctx.beginPath();
-    ctx.arc(px, py, p.size, 0, Math.PI*2);
-    ctx.fillStyle = p.color;
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = p.color;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  });
-
-  // Conexões (constelações)
-  for (let i=0; i<connections.length; i++) {
-    for (let j=i+1; j<connections.length; j++) {
-      const dx = connections[i].x - connections[j].x;
-      const dy = connections[i].y - connections[j].y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < 150) {
-        ctx.beginPath();
-        ctx.moveTo(connections[i].x, connections[i].y);
-        ctx.lineTo(connections[j].x, connections[j].y);
-        ctx.strokeStyle = `rgba(173,216,230,${1-dist/150})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+  // create explosion at ceu-local coords
+  function createExplosion(x, y, color) {
+    const count = 18 + Math.floor(random(0,16));
+    for (let i=0;i<count;i++) {
+      particles.push({ x, y, vx: random(-2,2), vy: random(-2,2), life: 60 + Math.floor(random(0,60)), age:0, r: random(1,3), color });
+      if (particles.length > MAX_PARTICLES) particles.shift();
     }
   }
 
-  requestAnimationFrame(animate);
-}
+  // bind click on stars (we'll treat .item elements as stars trigger)
+  document.getElementById('lista').addEventListener('click', (ev) => {
+    if (!effectsEnabled) return;
+    const it = ev.target.closest('.item');
+    if (!it) return;
+    const r = it.getBoundingClientRect();
+    const pr = ceu.getBoundingClientRect();
+    const x = (r.left - pr.left + r.width/2) * DPR;
+    const y = (r.top - pr.top + r.height/2) * DPR;
+    createExplosion(x,y,'hsl('+ (Math.floor(random(0,360))) +',70%,70%)');
+  });
 
-// Cometa seguindo cursor
-let comet = { x: width/2, y: height/2 };
-window.addEventListener('mousemove', e => { comet.x = e.clientX; comet.y = e.clientY; });
+  // main render loop
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (!effectsEnabled) { requestAnimationFrame(draw); return; }
 
-function drawComet() {
-  ctx.beginPath();
-  ctx.arc(comet.x, comet.y, 5, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(255, 255, 200, 0.8)';
-  ctx.shadowBlur = 15;
-  ctx.shadowColor = 'rgba(255, 255, 200, 0.9)';
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  requestAnimationFrame(drawComet);
-}
+    // stars
+    for (let s of stars) {
+      s.alpha += s.delta;
+      if (s.alpha <= 0.1 || s.alpha >= 1) s.delta *= -1;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * DPR, 0, Math.PI*2); ctx.fillStyle = `rgba(255,255,255,${s.alpha})`; ctx.fill();
+    }
 
-// Inicializar
-animate();
-drawComet();
+    // connections
+    ctx.lineWidth = 1 * DPR;
+    for (let i=0;i<connections.length;i++) {
+      for (let j=i+1;j<connections.length;j++) {
+        const a = connections[i], b = connections[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 140 * DPR) {
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.strokeStyle = `rgba(173,216,230,${1-dist/(140*DPR)})`; ctx.stroke();
+        }
+      }
+    }
+
+    // particles
+    for (let i = particles.length-1; i>=0; i--) {
+      const p = particles[i];
+      p.vy += 0.06; p.x += p.vx * DPR; p.y += p.vy * DPR; p.age++;
+      p.r *= 0.997;
+      ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.4, p.r) * DPR, 0, Math.PI*2); ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, 1 - p.age/p.life);
+      ctx.fill(); ctx.globalAlpha = 1;
+      if (p.age > p.life) particles.splice(i,1);
+    }
+
+    // comet trail
+    if (comet.trail.length) {
+      for (let i=0;i<comet.trail.length;i++) {
+        const t = comet.trail[i];
+        const age = Date.now() - t.t;
+        const a = Math.max(0, 1 - age/800);
+        ctx.beginPath(); ctx.arc(t.x, t.y, 4 * DPR * (a*0.8+0.2), 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,230,180,${a*0.7})`; ctx.fill();
+      }
+    }
+
+    // comet head
+    ctx.beginPath(); ctx.arc(comet.x, comet.y, 6 * DPR, 0, Math.PI*2); ctx.fillStyle = 'rgba(255,245,210,0.95)'; ctx.shadowBlur = 18 * DPR; ctx.shadowColor = 'rgba(255,230,180,0.8)'; ctx.fill(); ctx.shadowBlur = 0;
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+
+  // small periodic refresh of star positions to remain within new size
+  setInterval(() => { for (let s of stars) { s.x = Math.min(canvas.width-2, Math.max(2, s.x + random(-8,8))); s.y = Math.min(canvas.height-2, Math.max(2, s.y + random(-8,8))); } }, 2000);
+
+} // end if ceu
