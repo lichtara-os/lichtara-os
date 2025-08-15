@@ -35,6 +35,8 @@ async function fetchList() {
     container.innerHTML = '<p>Nenhuma canalização ainda.</p>';
     // still update stars map to empty
     window.__canalizacoes = [];
+  // notify starfield listeners
+  try { window.dispatchEvent(new CustomEvent('lichtara:list-updated')); } catch {}
     return;
   }
   window.__canalizacoes = items.slice();
@@ -44,6 +46,8 @@ async function fetchList() {
     div.innerHTML = `<h3>${escapeHtml(it.title)}</h3><div class="meta">${escapeHtml(it.author||'Anônimo')} • ${new Date(it.created_at).toLocaleString()}</div><p>${escapeHtml(it.content)}</p>`;
     container.appendChild(div);
   });
+  // notify starfield listeners
+  try { window.dispatchEvent(new CustomEvent('lichtara:list-updated')); } catch {}
 }
 
 function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;') }
