@@ -156,12 +156,24 @@ if (ceu) {
   const ro = new ResizeObserver(() => { resizeCanvas(); updateConnections(); computeChannelStars(); });
   ro.observe(ceu);
 
-  // toggle effects
+  // toggle effects (low-power mode)
   const toggle = document.getElementById('toggle-effects');
   const effectsKey = 'lichtara.effects.enabled';
   let effectsEnabled = localStorage.getItem(effectsKey);
   effectsEnabled = effectsEnabled === null ? true : effectsEnabled === 'true';
-  if (toggle) { toggle.setAttribute('aria-pressed', effectsEnabled ? 'true' : 'false'); toggle.addEventListener('click', () => { effectsEnabled = !effectsEnabled; localStorage.setItem(effectsKey, effectsEnabled); toggle.setAttribute('aria-pressed', effectsEnabled ? 'true' : 'false'); }); }
+  let animating = false;
+  if (toggle) {
+    toggle.setAttribute('aria-pressed', effectsEnabled ? 'true' : 'false');
+    toggle.textContent = effectsEnabled ? '✨' : '⏸️';
+    toggle.addEventListener('click', () => {
+      effectsEnabled = !effectsEnabled;
+      localStorage.setItem(effectsKey, effectsEnabled);
+      toggle.setAttribute('aria-pressed', effectsEnabled ? 'true' : 'false');
+      toggle.textContent = effectsEnabled ? '✨' : '⏸️';
+      if (!effectsEnabled) { ctx.clearRect(0,0,canvas.width,canvas.height); }
+      if (effectsEnabled && !animating) { lastT = performance.now(); requestAnimationFrame(draw); }
+    });
+  }
 
   // comet follows cursor within ceu
   ceu.addEventListener('mousemove', e => {
@@ -371,8 +383,9 @@ if (ceu) {
       return { x, y, r, it };
     });
   }
-  // recompute when list fetched initially
+  // recompute when list fetched initially and on list updates
   computeChannelStars();
+  window.addEventListener('lichtara:list-updated', computeChannelStars);
 
   // star click detection opens modal
   ceu.addEventListener('click', (ev) => {
@@ -394,11 +407,12 @@ if (ceu) {
   // main render loop
   let lastT = performance.now();
   function draw(now) {
+  animating = true;
   const dt = Math.min(40, now - lastT); lastT = now;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // audio sync
   try { if (typeof syncAudioToAurora === 'function') syncAudioToAurora(performance.now()); } catch(e) {}
-    if (!effectsEnabled) { requestAnimationFrame(draw); return; }
+    if (!effectsEnabled) { animating = false; return; }
 
     // stars
     for (let s of stars) {
