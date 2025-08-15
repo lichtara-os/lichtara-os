@@ -39,3 +39,29 @@ Notas sobre autenticação Git (macOS)
 - Recomendamos configurar SSH para evitar prompts constantes (gera chave e adicione em GitHub > Settings > SSH and GPG keys).
 
 Se quiser, eu faço o commit local por você (não precisa de credenciais) e gero um zip/patch com as mudanças para subir onde preferir.
+
+## Deploy
+
+Este site pode ser publicado via GitHub Pages (pasta `public/` → branch `gh-pages`) e também pode usar um backend opcional em Netlify Functions para persistência compartilhada.
+
+### GitHub Pages
+
+- Já há um workflow em `.github/workflows/pages.yml` para publicar `lichtara_site/public/`.
+- O domínio customizado é configurado via arquivo `public/CNAME` (ex.: `site.lichtara.com`).
+
+### Netlify (opcional)
+
+Se quiser usar uma API sem servidor para salvar canalizações como Issues do GitHub:
+
+- Base directory: `lichtara_site`
+- Build command: (vazio)
+- Publish directory: `public`
+- Functions directory: `netlify/functions`
+
+Crie as variáveis de ambiente no Netlify (Site settings → Build & deploy → Environment):
+
+- `GH_REPO_OWNER` = dono do repo (ex.: `lichtara-os`)
+- `GH_REPO_NAME` = nome do repo (ex.: `lichtara-os`)
+- `GH_TOKEN` = GitHub PAT com permissão para Issues (escopo `repo` limitado a issues)
+
+O endpoint ficará disponível em `/api/canalizacoes` (mapeado em `netlify.toml`). O frontend já tenta usá-lo e, se não estiver disponível, cai automaticamente para `localStorage`.
