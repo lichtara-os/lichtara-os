@@ -75,7 +75,8 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch: {}
 
 permissions:
@@ -91,6 +92,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ] || [ -f package.json ]; then
@@ -103,6 +109,23 @@ jobs:
             npm run build || true
           else
             echo "No build script; using existing public/ or root files"
+          fi
+
+      - name: Prepare pages content
+        run: |
+          # prefer public/ then build/ then dist/ then repo root as fallback
+          if [ -d public ]; then
+            echo "Using public/"
+            ls -la public || true
+          elif [ -d build ]; then
+            echo "Using build/"
+            ls -la build || true
+          elif [ -d dist ]; then
+            echo "Using dist/"
+            ls -la dist || true
+          else
+            echo "Using repo root"
+            ls -la . || true
           fi
 
       - name: Upload Pages Artifact
