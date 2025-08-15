@@ -87,8 +87,9 @@ for f in range(frames):
     # slight vignette
     vign = Image.new('L', (w,h), 0)
     vd = ImageDraw.Draw(vign)
-    for i_r in range(max(w,h)//2):
-        a = int(140 * (i_r / (max(w,h)//2)))
+    max_r = min(w,h)//2
+    for i_r in range(max_r):
+        a = int(140 * (i_r / (max_r)))
         vd.ellipse((i_r, i_r, w-i_r-1, h-i_r-1), fill=a)
     img.putalpha(255)
 
